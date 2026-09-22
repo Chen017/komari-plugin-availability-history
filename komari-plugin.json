@@ -1,0 +1,39 @@
+{
+  "name": "Availability History",
+  "short": "availability-history",
+  "version": "0.1.0",
+  "description": "基于 WebSocket 实时连接事件的节点在线率历史账本与 30 天可用性计算",
+  "author": "Chen017",
+  "license": "MIT",
+  "repository": "https://github.com/Chen017/komari-plugin-availability-history",
+  "komari": ">=1.5.0",
+  "permissions": {
+    "node": true,
+    "allowHooks": true,
+    "allowRoutes": true,
+    "allowAllFileAccess": true,
+    "timeout": 10
+  },
+  "config": {
+    "offline_grace_seconds": {
+      "type": "number",
+      "default": 180,
+      "description": "节点断连宽限期（秒），在此时间内重连不计为离线宕机（30–600）"
+    },
+    "retention_days": {
+      "type": "number",
+      "default": 90,
+      "description": "历史事件保留天数（30–365）"
+    },
+    "observer_heartbeat_seconds": {
+      "type": "number",
+      "default": 30,
+      "description": "监控者心跳间隔（秒）（10–120）"
+    },
+    "storage_path": {
+      "type": "string",
+      "default": "/app/data/plugin-state/availability-history",
+      "description": "持久化事件存储目录路径"
+    }
+  }
+}
