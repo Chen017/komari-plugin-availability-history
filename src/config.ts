@@ -2,7 +2,6 @@ export interface PluginConfig {
   offlineGraceSeconds: number;
   retentionDays: number;
   observerHeartbeatSeconds: number;
-  storagePath: string;
 }
 
 export function parsePluginConfig(raw?: Record<string, any>): PluginConfig {
@@ -21,15 +20,9 @@ export function parsePluginConfig(raw?: Record<string, any>): PluginConfig {
     heartbeat = 30;
   }
 
-  const storagePath =
-    typeof raw?.storage_path === 'string' && raw.storage_path.trim()
-      ? raw.storage_path.trim()
-      : '/app/data/plugin-state/availability-history';
-
   return {
     offlineGraceSeconds: offlineGrace,
     retentionDays,
     observerHeartbeatSeconds: heartbeat,
-    storagePath,
   };
 }

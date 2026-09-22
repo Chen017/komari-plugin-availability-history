@@ -140,4 +140,103 @@ describe('Availability summary calculation tests', () => {
     assert.strictEqual(node.uptimeRatio, 1);
     assert.strictEqual(node.coverageRatio, 1);
   });
+
+  it('Test F — observer gap causes currentState to become unknown when not re-anchored', () => {
+    const windowStart = new Date('2026-09-22T00:00:00.000Z');
+    const windowEnd = new Date('2026-09-22T10:00:00.000Z');
+
+    const events = [
+      {
+        schemaVersion: 1,
+        type: 'node_state',
+        nodeUuid: 'node-gap',
+        state: 'online',
+        at: '2026-09-22T00:00:00.000Z',
+        sessionId: 's1',
+      },
+      {
+        schemaVersion: 1,
+        type: 'observer_gap',
+        from: '2026-09-22T02:00:00.000Z',
+        to: '2026-09-22T04:00:00.000Z',
+      },
+    ];
+
+    const res = calculateAvailabilitySummary(events, ['node-gap'], windowStart, windowEnd);
+    assert.strictEqual(res.nodes[0].currentState, 'unknown');
+  });
+
+  it('Test G — observer gap followed by re-anchor restores currentState', () => {
+    const windowStart = new Date('2026-09-22T00:00:00.000Z');
+    const windowEnd = new Date('2026-09-22T10:00:00.000Z');
+
+    const events = [
+      {
+        schemaVersion: 1,
+        type: 'node_state',
+        nodeUuid: 'node-reanchor',
+        state: 'online',
+        at: '2026-09-22T00:00:00.000Z',
+        sessionId: 's1',
+      },
+      {
+        schemaVersion: 1,
+        type: 'observer_gap',
+        from: '2026-09-22T02:00:00.000Z',
+        to: '2026-09-22T04:00:00.000Z',
+      },
+      {
+        schemaVersion: 1,
+        type: 'node_state',
+        nodeUuid: 'node-reanchor',
+        state: 'online',
+        at: '2026-09-22T05:00:00.000Z',
+        sessionId: 's2',
+      },
+    ];
+
+    const res = calculateAvailabilitySummary(events, ['node-reanchor'], windowStart, windowEnd);
+    assert.strictEqual(res.nodes[0].currentState, 'online');
+  });
+
+  it('Test H — outage overlapping window start counts in outageCount and offlineSeconds', () => {
+    const windowStart = new Date('2026-09-22T00:00:00.000Z');
+    const windowEnd = new Date('2026-09-22T10:00:00.000Z');
+
+    const events = [
+      {
+        schemaVersion: 1,
+        type: 'node_state',
+        nodeUuid: 'node-overlap',
+        state: 'offline',
+        at: '2026-09-21T23:50:00.000Z',
+        sessionId: 's1',
+      },
+      {
+        schemaVersion: 1,
+        type: 'node_state',
+        nodeUuid: 'node-overlap',
+        state: 'online',
+        at: '2026-09-22T00:20:00.000Z',
+        sessionId: 's1',
+      },
+    ];
+
+    const res = calculateAvailabilitySummary(events, ['node-overlap'], windowStart, windowEnd);
+    const node = res.nodes[0];
+
+    assert.strictEqual(node.outageCount, 1);
+    assert.strictEqual(node.offlineSeconds, 20 * 60);
+  });
+
+  it('Test I — zero observable data yields uptimeRatio = null', () => {
+    const windowStart = new Date('2026-09-22T00:00:00.000Z');
+    const windowEnd = new Date('2026-09-22T10:00:00.000Z');
+
+    const res = calculateAvailabilitySummary([], ['node-unknown'], windowStart, windowEnd);
+    const node = res.nodes[0];
+
+    assert.strictEqual(node.observableSeconds, 0);
+    assert.strictEqual(node.uptimeRatio, null);
+  });
 });

@@ -11,10 +11,9 @@
     "node": true,
     "allowHooks": true,
     "allowRoutes": true,
-    "allowAllFileAccess": true,
     "timeout": 10
   },
-  "config": {
+  "configuration": {
     "offline_grace_seconds": {
       "type": "number",
       "default": 180,
@@ -29,11 +28,6 @@
       "type": "number",
       "default": 30,
       "description": "监控者心跳间隔（秒）（10–120）"
-    },
-    "storage_path": {
-      "type": "string",
-      "default": "/app/data/plugin-state/availability-history",
-      "description": "持久化事件存储目录路径"
     }
   }
 }

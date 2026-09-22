@@ -26,13 +26,34 @@ describe('API routes tests', () => {
         mockServer,
         ledger,
         tracker,
-        { offlineGraceSeconds: 60, retentionDays: 90, observerHeartbeatSeconds: 30, storagePath: tmpDir },
+        { offlineGraceSeconds: 60, retentionDays: 90, observerHeartbeatSeconds: 30 },
         true
       );
 
       assert.ok(routes.has('GET /api/plugin/availability-history/v1/summary'));
       assert.ok(routes.has('GET /api/plugin/availability-history/v1/events'));
       assert.ok(routes.has('GET /api/plugin/availability-history/v1/health'));
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('throws if server.route is not available', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'api-test-'));
+    try {
+      const ledger = new Ledger(tmpDir);
+      ledger.init();
+      const tracker = new ConnectionTracker({ offlineGraceSeconds: 60, ledger });
+
+      assert.throws(() => {
+        registerRoutes(
+          {},
+          ledger,
+          tracker,
+          { offlineGraceSeconds: 60, retentionDays: 90, observerHeartbeatSeconds: 30 },
+          true
+        );
+      }, /server\.route is unavailable/);
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
@@ -55,7 +76,7 @@ describe('API routes tests', () => {
         mockServer,
         ledger,
         tracker,
-        { offlineGraceSeconds: 60, retentionDays: 90, observerHeartbeatSeconds: 30, storagePath: tmpDir },
+        { offlineGraceSeconds: 60, retentionDays: 90, observerHeartbeatSeconds: 30 },
         true
       );
 
@@ -96,7 +117,7 @@ describe('API routes tests', () => {
         mockServer,
         ledger,
         tracker,
-        { offlineGraceSeconds: 60, retentionDays: 90, observerHeartbeatSeconds: 30, storagePath: tmpDir },
+        { offlineGraceSeconds: 60, retentionDays: 90, observerHeartbeatSeconds: 30 },
         true
       );
 

@@ -40,6 +40,29 @@ export function calculateAvailabilitySummary(
 
   // 1. Observer coverage
   const rawGaps: Interval[] = [];
+
+  // Determine earliest observer tracking timestamp from events
+  let earliestObserverMs: number | null = null;
+  for (const ev of events) {
+    const t = ev.type === 'node_state' ? Date.parse(ev.at) : Date.parse(ev.from);
+    if (Number.isFinite(t)) {
+      if (earliestObserverMs === null || t < earliestObserverMs) {
+        earliestObserverMs = t;
+      }
+    }
+  }
+
+  if (earliestObserverMs === null) {
+    // No events at all -> entire window is unobserved
+    rawGaps.push({ startMs: windowStartMs, endMs: windowEndMs });
+  } else if (earliestObserverMs > windowStartMs) {
+    // Observer started tracking after windowStart -> pre-tracking period is unobserved
+    rawGaps.push({
+      startMs: windowStartMs,
+      endMs: Math.min(earliestObserverMs, windowEndMs),
+    });
+  }
+
   for (const ev of events) {
     if (ev.type === 'observer_gap') {
       const fromMs = Date.parse(ev.from);
@@ -82,7 +105,7 @@ export function calculateAvailabilitySummary(
         observableSeconds: 0,
         unobservedSeconds: windowDurationSeconds,
         coverageRatio: 0,
-        uptimeRatio: 1,
+        uptimeRatio: null,
         outageCount: 0,
       });
       continue;
@@ -118,7 +141,6 @@ export function calculateAvailabilitySummary(
 
     let onlineSeconds = 0;
     let offlineSeconds = 0;
-    let outageCount = 0;
 
     for (let i = 0; i < sortedTimes.length - 1; i++) {
       const segStart = sortedTimes[i]!;
@@ -175,11 +197,25 @@ export function calculateAvailabilitySummary(
       }
     }
 
-    // Count outages within window
-    for (const ev of nodeEvents) {
-      const atMs = Date.parse(ev.at);
-      if (atMs >= windowStartMs && atMs <= windowEndMs && ev.state === 'offline') {
-        outageCount++;
+    // Count confirmed outages overlapping query window
+    let outageCount = 0;
+    for (let i = 0; i < nodeEvents.length; i++) {
+      const ev = nodeEvents[i]!;
+      if (ev.state === 'offline') {
+        if (i > 0 && nodeEvents[i - 1]!.state === 'offline') {
+          continue;
+        }
+        const offlineStartMs = Date.parse(ev.at);
+        let offlineEndMs = windowEndMs;
+        for (let j = i + 1; j < nodeEvents.length; j++) {
+          if (nodeEvents[j]!.state === 'online') {
+            offlineEndMs = Date.parse(nodeEvents[j]!.at);
+            break;
+          }
+        }
+        if (offlineStartMs < windowEndMs && offlineEndMs > windowStartMs) {
+          outageCount++;
+        }
       }
     }
 
@@ -187,13 +223,23 @@ export function calculateAvailabilitySummary(
     const unobservedSeconds = Math.max(0, windowDurationSeconds - observableSeconds);
     const coverageRatio = Number((observableSeconds / windowDurationSeconds).toFixed(4));
     const uptimeRatio =
-      observableSeconds > 0 ? Number((onlineSeconds / observableSeconds).toFixed(4)) : 1;
+      observableSeconds > 0 ? Number((onlineSeconds / observableSeconds).toFixed(4)) : null;
 
     const latestEvent = nodeEvents[nodeEvents.length - 1]!;
+    const latestEventAtMs = Date.parse(latestEvent.at);
+
+    // Section 12-13: currentState becomes unknown if an observer gap occurred after latest node event
+    const hasGapAfter = events.some((ev) => {
+      if (ev.type !== 'observer_gap') return false;
+      const gapFromMs = Date.parse(ev.from);
+      const gapToMs = Date.parse(ev.to);
+      return (gapFromMs > latestEventAtMs || gapToMs > latestEventAtMs) && gapFromMs < windowEndMs;
+    });
+    const currentState = hasGapAfter ? 'unknown' : latestEvent.state;
 
     nodeSummaries.push({
       uuid,
-      currentState: latestEvent.state,
+      currentState,
       trackingSince,
       onlineSeconds,
       offlineSeconds,

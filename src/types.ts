@@ -36,7 +36,7 @@ export interface AvailabilityNodeSummary {
   observableSeconds: number;
   unobservedSeconds: number;
   coverageRatio: number;
-  uptimeRatio: number;
+  uptimeRatio: number | null;
   outageCount: number;
 }
 

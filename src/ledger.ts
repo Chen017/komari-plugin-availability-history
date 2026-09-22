@@ -9,6 +9,7 @@ export class Ledger {
   private checkpointFile: string;
   private currentSessionId: string = '';
   private currentStartedAt: string = '';
+  private lastHeartbeatAt: string = '';
 
   constructor(storagePath: string) {
     this.storagePath = storagePath;
@@ -37,6 +38,7 @@ export class Ledger {
     const now = new Date();
     const nowIso = now.toISOString();
     this.currentStartedAt = nowIso;
+    this.lastHeartbeatAt = nowIso;
     this.currentSessionId = crypto.randomUUID ? crypto.randomUUID() : 'session-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
 
     let recoveredGap: ObserverGapEvent | null = null;
@@ -132,8 +134,13 @@ export class Ledger {
     }
   }
 
+  public getLastHeartbeatAt(): string {
+    return this.lastHeartbeatAt || this.currentStartedAt;
+  }
+
   public updateHeartbeat(): void {
     const nowIso = new Date().toISOString();
+    this.lastHeartbeatAt = nowIso;
     this.writeCheckpoint({
       schemaVersion: 1,
       sessionId: this.currentSessionId,
@@ -146,6 +153,7 @@ export class Ledger {
 
   public markCleanShutdown(): void {
     const nowIso = new Date().toISOString();
+    this.lastHeartbeatAt = nowIso;
     this.writeCheckpoint({
       schemaVersion: 1,
       sessionId: this.currentSessionId,

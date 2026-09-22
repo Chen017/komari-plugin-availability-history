@@ -68,8 +68,7 @@ export function registerRoutes(
   isStorageWritable: boolean
 ): void {
   if (typeof server?.route !== 'function') {
-    console.warn('[API] server.route is not available, skipping route registration');
-    return;
+    throw new Error('[API] server.route is unavailable');
   }
 
   // 1. Summary API (public)
@@ -80,34 +79,16 @@ export function registerRoutes(
       if (!Number.isFinite(days) || days < 1) days = 30;
       if (days > 90) days = 90;
 
-      const uuidsStr = q.uuids ? q.uuids.trim() : '';
-      if (!uuidsStr) {
-        // Section 21: If uuids is absent/empty, return nodes: []
-        const now = new Date();
-        const start = new Date(now.getTime() - days * 86400 * 1000);
-        sendJson(
-          res,
-          200,
-          {
-            schemaVersion: 1,
-            generatedAt: now.toISOString(),
-            windowStart: start.toISOString(),
-            windowEnd: now.toISOString(),
-            observerCoverage: { observableSeconds: days * 86400, unobservedSeconds: 0 },
-            nodes: [],
-          },
-          { 'Cache-Control': 'no-store' }
-        );
-        return;
-      }
-
-      const uuids = uuidsStr.split(',').map((u) => u.trim()).filter(Boolean);
       const now = new Date();
       const windowStart = new Date(now.getTime() - days * 86400 * 1000);
-
       const events = ledger.loadEvents();
-      const summary = calculateAvailabilitySummary(events, uuids, windowStart, now);
 
+      const uuidsStr = q.uuids ? q.uuids.trim() : '';
+      const uuids = uuidsStr
+        ? uuidsStr.split(',').map((u) => u.trim()).filter(Boolean)
+        : [];
+
+      const summary = calculateAvailabilitySummary(events, uuids, windowStart, now);
       sendJson(res, 200, summary, { 'Cache-Control': 'no-store' });
     } catch (err: any) {
       console.error('[API] Error in summaryHandler', err);
@@ -156,7 +137,7 @@ export function registerRoutes(
         healthy: isStorageWritable,
         sessionId: ledger.getSessionId(),
         startedAt: ledger.getStartedAt(),
-        lastObserverHeartbeat: new Date().toISOString(),
+        lastObserverHeartbeat: ledger.getLastHeartbeatAt(),
         storagePath: ledger.storagePath,
         storageWritable: isStorageWritable,
         eventCount: events.length,
