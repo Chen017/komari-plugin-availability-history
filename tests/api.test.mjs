@@ -26,7 +26,6 @@ describe('API routes tests', () => {
         mockServer,
         ledger,
         tracker,
-        { offlineGraceSeconds: 60, retentionDays: 90, observerHeartbeatSeconds: 30 },
         true
       );
 
@@ -76,7 +75,6 @@ describe('API routes tests', () => {
         mockServer,
         ledger,
         tracker,
-        { offlineGraceSeconds: 60, retentionDays: 90, observerHeartbeatSeconds: 30 },
         true
       );
 
@@ -117,7 +115,6 @@ describe('API routes tests', () => {
         mockServer,
         ledger,
         tracker,
-        { offlineGraceSeconds: 60, retentionDays: 90, observerHeartbeatSeconds: 30 },
         true
       );
 
