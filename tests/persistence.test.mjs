@@ -127,4 +127,63 @@ describe('Ledger persistence & compaction tests', () => {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
   });
+
+  it('records observer gap across a fast clean restart', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ledger-test-'));
+    try {
+      const endedAt = new Date(Date.now() - 1000).toISOString();
+      fs.writeFileSync(
+        path.join(tmpDir, 'observer-state.json'),
+        JSON.stringify({
+          schemaVersion: 1,
+          sessionId: 'previous-session',
+          startedAt: new Date(Date.now() - 60_000).toISOString(),
+          lastHeartbeatAt: endedAt,
+          endedAt,
+          running: false,
+        })
+      );
+
+      const ledger = new Ledger(tmpDir);
+      const init = ledger.init();
+
+      assert.ok(init.recoveredGap);
+      assert.strictEqual(init.recoveredGap.from, endedAt);
+
+      const events = ledger.loadEvents();
+      assert.strictEqual(events.length, 1);
+      assert.strictEqual(events[0].type, 'observer_gap');
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('defaults invalid query limit to 100 instead of returning the full ledger', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ledger-test-'));
+    try {
+      const ledger = new Ledger(tmpDir);
+      ledger.init();
+
+      const baseMs = Date.parse('2026-09-22T00:00:00.000Z');
+      for (let i = 0; i < 105; i++) {
+        ledger.appendEvent({
+          schemaVersion: 1,
+          type: 'node_state',
+          nodeUuid: 'n1',
+          state: i % 2 === 0 ? 'online' : 'offline',
+          at: new Date(baseMs + i * 1000).toISOString(),
+          sessionId: 's1',
+        });
+      }
+
+      const events = ledger.queryEvents({ limit: Number.NaN });
+
+      assert.strictEqual(events.length, 100);
+      assert.strictEqual(events[0].at, new Date(baseMs + 5 * 1000).toISOString());
+      assert.strictEqual(events[99].at, new Date(baseMs + 104 * 1000).toISOString());
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
 });
