@@ -1,6 +1,5 @@
 import type { Ledger } from './ledger.ts';
 import type { ConnectionTracker } from './tracker.ts';
-import type { PluginConfig } from './config.ts';
 import { calculateAvailabilitySummary } from './summary.ts';
 
 export function checkAdmin(req: any): boolean {
@@ -64,7 +63,6 @@ export function registerRoutes(
   server: any,
   ledger: Ledger,
   tracker: ConnectionTracker,
-  config: PluginConfig,
   isStorageWritable: boolean
 ): void {
   if (typeof server?.route !== 'function') {
