@@ -37,7 +37,7 @@ export class ConnectionTracker {
     }
     connSet.add(connId);
 
-    // Section 13: New-session re-anchor
+    // Re-anchor the first connection observed in this plugin session
     if (!this.sessionObserved.has(clientUuid)) {
       this.sessionObserved.add(clientUuid);
       this.lastKnownState.set(clientUuid, 'online');
