@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "test": "node --experimental-strip-types --test tests/*.test.mjs"
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "komari",
@@ -17,6 +18,7 @@
   "license": "MIT",
   "devDependencies": {
     "esbuild": "^0.25.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "@types/node": "22.15.33"
   }
 }
