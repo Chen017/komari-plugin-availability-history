@@ -1,7 +1,7 @@
 {
   "name": "Availability History",
   "short": "availability-history",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "基于 WebSocket 实时连接事件的节点在线率历史账本与 30 天可用性计算",
   "author": "Chen017",
   "license": "MIT",
@@ -14,20 +14,29 @@
     "timeout": 10
   },
   "configuration": {
-    "offline_grace_seconds": {
-      "type": "number",
-      "default": 180,
-      "description": "节点断连宽限期（秒），在此时间内重连不计为离线宕机（30–600）"
-    },
-    "retention_days": {
-      "type": "number",
-      "default": 90,
-      "description": "历史事件保留天数（30–365）"
-    },
-    "observer_heartbeat_seconds": {
-      "type": "number",
-      "default": 30,
-      "description": "监控者心跳间隔（秒）（10–120）"
-    }
+    "type": "managed",
+    "data": [
+      {
+        "key": "offline_grace_seconds",
+        "name": "节点断连宽限期（秒）",
+        "type": "number",
+        "default": 180,
+        "help": "在此时间内重连不计为离线宕机；有效范围 30–600 秒。"
+      },
+      {
+        "key": "retention_days",
+        "name": "历史事件保留天数",
+        "type": "number",
+        "default": 90,
+        "help": "事件账本的历史保留时间；有效范围 30–365 天。"
+      },
+      {
+        "key": "observer_heartbeat_seconds",
+        "name": "监控者心跳间隔（秒）",
+        "type": "number",
+        "default": 30,
+        "help": "用于记录监控者存活状态；有效范围 10–120 秒。"
+      }
+    ]
   }
 }
