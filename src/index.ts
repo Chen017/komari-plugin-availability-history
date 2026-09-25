@@ -14,7 +14,6 @@ let compactionTimer: NodeJS.Timeout | null = null;
 
 function getServer(): any {
   if (typeof require === 'function') {
-    // @ts-expect-error Komari runtime module
     return require('server');
   }
   if (typeof (globalThis as any).require === 'function') {
