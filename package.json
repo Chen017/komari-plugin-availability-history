@@ -1,6 +1,6 @@
 {
   "name": "komari-plugin-availability-history",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Exact WebSocket Online/Offline connection event ledger and 30-day availability history for Komari.",
   "type": "module",
   "scripts": {
