@@ -103,7 +103,7 @@ export async function load(): Promise<void> {
   console.log('[AVAILABILITY-HISTORY] Registered WebSocket hooks on /api/clients/v2/rpc');
 
   // Register HTTP routes
-  registerRoutes(server, ledger, tracker, config, isWritable);
+  registerRoutes(server, ledger, tracker, isWritable);
 
   console.log('[AVAILABILITY-HISTORY] Storage ready at ' + storagePath);
 
