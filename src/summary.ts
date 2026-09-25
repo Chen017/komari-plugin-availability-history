@@ -227,7 +227,7 @@ export function calculateAvailabilitySummary(
     const latestEvent = nodeEvents[nodeEvents.length - 1]!;
     const latestEventAtMs = Date.parse(latestEvent.at);
 
-    // Section 12-13: currentState becomes unknown if an observer gap occurred after latest node event
+    // Current state is unknown if observer continuity broke after the latest node event
     const hasGapAfter = events.some((ev) => {
       if (ev.type !== 'observer_gap') return false;
       const gapFromMs = Date.parse(ev.from);
