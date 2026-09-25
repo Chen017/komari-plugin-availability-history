@@ -1,7 +1,7 @@
 {
   "name": "Availability History",
   "short": "availability-history",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "基于 WebSocket 实时连接事件的节点在线率历史账本与 30 天可用性计算",
   "author": "Chen017",
   "license": "MIT",
