@@ -51,17 +51,3 @@ export interface AvailabilitySummaryResponse {
   };
   nodes: AvailabilityNodeSummary[];
 }
-
-export interface HealthResponse {
-  schemaVersion: 1;
-  pluginVersion: string;
-  healthy: boolean;
-  sessionId: string;
-  startedAt: string;
-  lastObserverHeartbeat: string;
-  storagePath: string;
-  storageWritable: boolean;
-  eventCount: number;
-  trackedNodeCount: number;
-  pendingOfflineCount: number;
-}

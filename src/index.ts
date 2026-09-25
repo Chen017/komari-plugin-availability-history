@@ -6,7 +6,6 @@ import { registerRoutes } from './api.ts';
 
 declare const __storageDir__: string | undefined;
 
-let server: any = null;
 let ledgerInstance: Ledger | null = null;
 let trackerInstance: ConnectionTracker | null = null;
 let heartbeatTimer: NodeJS.Timeout | null = null;
@@ -14,7 +13,6 @@ let compactionTimer: NodeJS.Timeout | null = null;
 
 function getServer(): any {
   if (typeof require === 'function') {
-    // @ts-expect-error Komari runtime module
     return require('server');
   }
   if (typeof (globalThis as any).require === 'function') {
@@ -26,6 +24,7 @@ function getServer(): any {
 export async function load(): Promise<void> {
   console.log('[AVAILABILITY-HISTORY] Loading plugin...');
 
+  let server: any;
   try {
     server = getServer();
   } catch (err) {
@@ -103,7 +102,7 @@ export async function load(): Promise<void> {
   console.log('[AVAILABILITY-HISTORY] Registered WebSocket hooks on /api/clients/v2/rpc');
 
   // Register HTTP routes
-  registerRoutes(server, ledger, tracker, config, isWritable);
+  registerRoutes(server, ledger, tracker, isWritable);
 
   console.log('[AVAILABILITY-HISTORY] Storage ready at ' + storagePath);
 
@@ -145,8 +144,6 @@ export async function unload(): Promise<void> {
     ledgerInstance.markCleanShutdown();
     ledgerInstance = null;
   }
-
-  server = null;
 
   console.log('[AVAILABILITY-HISTORY] Plugin unloaded cleanly.');
 }

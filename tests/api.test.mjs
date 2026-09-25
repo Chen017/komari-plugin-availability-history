@@ -26,7 +26,6 @@ describe('API routes tests', () => {
         mockServer,
         ledger,
         tracker,
-        { offlineGraceSeconds: 60, retentionDays: 90, observerHeartbeatSeconds: 30 },
         true
       );
 
@@ -76,13 +75,11 @@ describe('API routes tests', () => {
         mockServer,
         ledger,
         tracker,
-        { offlineGraceSeconds: 60, retentionDays: 90, observerHeartbeatSeconds: 30 },
         true
       );
 
       const handler = routes.get('GET /api/plugin/availability-history/v1/summary');
 
-      let responseStatus = 0;
       let responseData = null;
       const res = {
         setHeader: () => {},
@@ -117,7 +114,6 @@ describe('API routes tests', () => {
         mockServer,
         ledger,
         tracker,
-        { offlineGraceSeconds: 60, retentionDays: 90, observerHeartbeatSeconds: 30 },
         true
       );
 

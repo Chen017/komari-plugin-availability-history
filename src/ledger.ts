@@ -52,8 +52,8 @@ export class Ledger {
           const prevEndpoint = prev.endedAt || prev.lastHeartbeatAt;
           if (prevEndpoint) {
             const endpointMs = Date.parse(prevEndpoint);
-            // If gap is more than 10 seconds or previous was not cleanly ended
-            if (Number.isFinite(endpointMs) && (now.getTime() - endpointMs > 10_000 || prev.running)) {
+            // Any interval between observer sessions is unobserved, including fast clean reloads.
+            if (Number.isFinite(endpointMs) && endpointMs < now.getTime()) {
               recoveredGap = {
                 schemaVersion: 1,
                 type: 'observer_gap',
@@ -219,7 +219,10 @@ export class Ledger {
     const events = this.loadEvents();
     const fromMs = options.from ? Date.parse(options.from) : Number.NEGATIVE_INFINITY;
     const toMs = options.to ? Date.parse(options.to) : Number.POSITIVE_INFINITY;
-    const limit = Math.min(Math.max(Number(options.limit ?? 100), 1), 1000);
+    const requestedLimit = Number(options.limit ?? 100);
+    const limit = Number.isFinite(requestedLimit)
+      ? Math.min(Math.max(Math.trunc(requestedLimit), 1), 1000)
+      : 100;
 
     const filtered = events.filter((ev) => {
       if (ev.type === 'node_state') {
