@@ -3,7 +3,6 @@ import type {
   AvailabilitySummaryResponse,
   LedgerEvent,
   NodeStateEvent,
-  ObserverGapEvent,
 } from './types.ts';
 
 interface Interval {
