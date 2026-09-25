@@ -80,7 +80,6 @@ describe('API routes tests', () => {
 
       const handler = routes.get('GET /api/plugin/availability-history/v1/summary');
 
-      let responseStatus = 0;
       let responseData = null;
       const res = {
         setHeader: () => {},
