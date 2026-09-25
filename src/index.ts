@@ -6,7 +6,6 @@ import { registerRoutes } from './api.ts';
 
 declare const __storageDir__: string | undefined;
 
-let server: any = null;
 let ledgerInstance: Ledger | null = null;
 let trackerInstance: ConnectionTracker | null = null;
 let heartbeatTimer: NodeJS.Timeout | null = null;
@@ -25,6 +24,7 @@ function getServer(): any {
 export async function load(): Promise<void> {
   console.log('[AVAILABILITY-HISTORY] Loading plugin...');
 
+  let server: any;
   try {
     server = getServer();
   } catch (err) {
@@ -144,8 +144,6 @@ export async function unload(): Promise<void> {
     ledgerInstance.markCleanShutdown();
     ledgerInstance = null;
   }
-
-  server = null;
 
   console.log('[AVAILABILITY-HISTORY] Plugin unloaded cleanly.');
 }
