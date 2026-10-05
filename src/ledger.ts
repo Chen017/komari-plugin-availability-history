@@ -173,6 +173,7 @@ export class Ledger {
     // For every node, keep latest pre-cutoff node_state event, and all events at/after cutoff
     const nodePreCutoffMap = new Map<string, NodeStateEvent>();
     const retainedEvents: LedgerEvent[] = [];
+    let preCutoffGap: LedgerEvent | null = null;
 
     for (const ev of events) {
       if (ev.type === 'node_state') {
@@ -189,11 +190,15 @@ export class Ledger {
         const toMs = Date.parse(ev.to);
         if (toMs >= cutoffMs) {
           retainedEvents.push(ev);
+        } else if (!preCutoffGap || (preCutoffGap.type === 'observer_gap' && toMs > Date.parse(preCutoffGap.to))) {
+          preCutoffGap = ev;
         }
       }
     }
 
     const preCutoffAnchors = Array.from(nodePreCutoffMap.values());
+    // The latest old gap still invalidates older anchors until a node is observed again.
+    if (preCutoffGap) retainedEvents.push(preCutoffGap);
     const finalEvents = [...preCutoffAnchors, ...retainedEvents].sort((a, b) => {
       const timeA = a.type === 'node_state' ? a.at : a.from;
       const timeB = b.type === 'node_state' ? b.at : b.from;

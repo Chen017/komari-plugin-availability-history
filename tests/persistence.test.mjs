@@ -4,8 +4,27 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import { Ledger } from '../src/ledger.ts';
+import { calculateAvailabilitySummary } from '../src/summary.ts';
 
 describe('Ledger persistence & compaction tests', () => {
+  it('compaction preserves unknown state after an old observer gap', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ledger-gap-'));
+    try {
+      const now = Date.now();
+      const at = days => new Date(now - days * 86400000).toISOString();
+      const ledger = new Ledger(tmpDir);
+      ledger.init();
+      ledger.appendEvent({ schemaVersion: 1, type: 'node_state', nodeUuid: 'n', state: 'online', at: at(100), sessionId: 'old' });
+      ledger.appendEvent({ schemaVersion: 1, type: 'observer_gap', from: at(95), to: at(94), reason: 'restart' });
+      const start = new Date(at(30));
+      const end = new Date(now);
+      const before = calculateAvailabilitySummary(ledger.loadEvents(), ['n'], start, end);
+      ledger.compact(90);
+      const after = calculateAvailabilitySummary(ledger.loadEvents(), ['n'], start, end);
+      assert.deepEqual(after.nodes, before.nodes);
+      assert.equal(after.nodes[0].uptimeRatio, null);
+    } finally { fs.rmSync(tmpDir, { recursive: true, force: true }); }
+  });
   it('recovers from observer gap on startup and creates new session', () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ledger-test-'));
     try {
