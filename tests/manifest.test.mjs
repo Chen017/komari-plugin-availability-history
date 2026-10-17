@@ -11,7 +11,15 @@ describe('Plugin manifest', () => {
     assert.ok(Array.isArray(manifest.configuration?.data));
     assert.ok(manifest.configuration.data.length > 0);
 
-    const items = new Map(manifest.configuration.data.map((item) => [item.key, item]));
+    // 1. Top banner notice
+    const bannerItem = manifest.configuration.data[0];
+    assert.strictEqual(bannerItem.type, 'textbox');
+    const bannerText = typeof bannerItem.name === 'string' ? bannerItem.name : JSON.stringify(bannerItem.name);
+    assert.ok(bannerText.includes('komari-theme-emerald-insights'));
+
+    // 2. Managed configuration options
+    const configItems = manifest.configuration.data.filter((item) => item.key);
+    const items = new Map(configItems.map((item) => [item.key, item]));
     assert.deepStrictEqual(
       [...items.keys()],
       ['offline_grace_seconds', 'retention_days', 'observer_heartbeat_seconds']

@@ -5,7 +5,11 @@
 [![Theme Integration](https://img.shields.io/badge/Theme%20Integration-Komari%20Emerald%20Insights-emerald)](https://github.com/Chen017/komari-theme-emerald-insights)
 [![Komari Emerald Ecosystem](https://img.shields.io/badge/Komari%20Emerald-Ecosystem-10b981)](https://github.com/Chen017/komari-emerald-suite)
 
-> 基于事件账本的 Komari 在线率历史与 30 天可用性 API，原生适配 Komari Emerald Insights。  
+> [!IMPORTANT]
+> **前置说明与推荐搭配**：
+> 1. **可独立运行**：本插件作为服务端后台数据采集与事件账本服务，基于 WebSocket 实时断连事件计算 30 天可用性并提供 REST API。插件**可完全独立安装与运行**，无需在被监控 VPS 额外安装采集脚本。
+> 2. **强烈推荐搭配主题**：Komari 原生前端界面并不包含 30 天在线率图表与可用性条带。**强烈推荐搭配安装配套主题 [Komari Emerald Insights（翡翠洞察）](https://github.com/Chen017/komari-theme-emerald-insights)**，才能在前端「资源概览」与节点卡片中完整展示真正的 30 天在线率图表与可用性历史！
+
 ---
 
 ## 核心特性
