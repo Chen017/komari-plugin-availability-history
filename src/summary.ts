@@ -201,7 +201,7 @@ export function calculateAvailabilitySummary(
     for (let i = 0; i < nodeEvents.length; i++) {
       const ev = nodeEvents[i]!;
       if (ev.state === 'offline') {
-        if (i > 0 && nodeEvents[i - 1]!.state === 'offline') {
+        if (i > 0 && nodeEvents[i - 1]!.state === 'offline' && !events.some(event => event.type === 'observer_gap' && Date.parse(event.to) > Date.parse(nodeEvents[i - 1]!.at) && Date.parse(event.from) < Date.parse(ev.at))) {
           continue;
         }
         const offlineStartMs = Date.parse(ev.at);
@@ -212,7 +212,14 @@ export function calculateAvailabilitySummary(
             break;
           }
         }
-        if (offlineStartMs < windowEndMs && offlineEndMs > windowStartMs) {
+        // An observer gap ends the confirmed outage, even without a new online event.
+        for (const event of events) {
+          if (event.type === 'observer_gap') {
+            const gapStart = Date.parse(event.from);
+            if (gapStart >= offlineStartMs && gapStart < offlineEndMs) offlineEndMs = gapStart;
+          }
+        }
+        if (offlineStartMs < windowEndMs && offlineEndMs > windowStartMs && offlineEndMs > offlineStartMs) {
           outageCount++;
         }
       }

@@ -97,6 +97,11 @@ export class Ledger {
   public appendEvent(event: LedgerEvent): void {
     const line = JSON.stringify(event) + '\n';
     try {
+      // A partial trailing line must not swallow the next recovery event.
+      if (fs.existsSync(this.eventsFile)) {
+        const content = fs.readFileSync(this.eventsFile, 'utf-8');
+        if (content && !content.endsWith('\n')) fs.appendFileSync(this.eventsFile, '\n', 'utf-8');
+      }
       fs.appendFileSync(this.eventsFile, line, 'utf-8');
     } catch (err) {
       console.error('[LEDGER] Failed to append event to ' + this.eventsFile, err);
