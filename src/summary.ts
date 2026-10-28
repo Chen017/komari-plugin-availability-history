@@ -39,6 +39,7 @@ export function calculateAvailabilitySummary(
 
   // 1. Observer coverage
   const rawGaps: Interval[] = [];
+  const observerGaps = events.filter((ev): ev is Extract<LedgerEvent, { type: 'observer_gap' }> => ev.type === 'observer_gap');
 
   // Determine earliest observer tracking timestamp from events
   let earliestObserverMs: number | null = null;
@@ -83,16 +84,20 @@ export function calculateAvailabilitySummary(
 
   // 2. Node summaries
   const nodeSummaries: AvailabilityNodeSummary[] = [];
+  const requested = new Set(requestedUuids);
+  const eventsByNode = new Map<string, NodeStateEvent[]>();
+  for (const ev of events) {
+    if (ev.type === 'node_state' && requested.has(ev.nodeUuid)) {
+      const nodeEvents = eventsByNode.get(ev.nodeUuid) ?? [];
+      nodeEvents.push(ev);
+      eventsByNode.set(ev.nodeUuid, nodeEvents);
+    }
+  }
 
   for (const uuid of requestedUuids) {
     if (!uuid) continue;
 
-    const nodeEvents: NodeStateEvent[] = [];
-    for (const ev of events) {
-      if (ev.type === 'node_state' && ev.nodeUuid === uuid) {
-        nodeEvents.push(ev);
-      }
-    }
+    const nodeEvents = eventsByNode.get(uuid) ?? [];
 
     if (nodeEvents.length === 0) {
       nodeSummaries.push({
@@ -177,8 +182,7 @@ export function calculateAvailabilitySummary(
       // 4. Check if there was any observer gap between lastNodeEvent and segMid
       // If there was a gap, continuity was broken and state is UNOBSERVED until a new event anchors it
       const lastEventMs = Date.parse(lastNodeEvent.at);
-      const gapBetween = events.some((ev) => {
-        if (ev.type !== 'observer_gap') return false;
+      const gapBetween = observerGaps.some((ev) => {
         const gapTo = Date.parse(ev.to);
         const gapFrom = Date.parse(ev.from);
         // Gap ended after last event and before segMid
@@ -201,7 +205,7 @@ export function calculateAvailabilitySummary(
     for (let i = 0; i < nodeEvents.length; i++) {
       const ev = nodeEvents[i]!;
       if (ev.state === 'offline') {
-        if (i > 0 && nodeEvents[i - 1]!.state === 'offline' && !events.some(event => event.type === 'observer_gap' && Date.parse(event.to) > Date.parse(nodeEvents[i - 1]!.at) && Date.parse(event.from) < Date.parse(ev.at))) {
+        if (i > 0 && nodeEvents[i - 1]!.state === 'offline' && !observerGaps.some(event => Date.parse(event.to) > Date.parse(nodeEvents[i - 1]!.at) && Date.parse(event.from) < Date.parse(ev.at))) {
           continue;
         }
         const offlineStartMs = Date.parse(ev.at);
@@ -213,7 +217,7 @@ export function calculateAvailabilitySummary(
           }
         }
         // An observer gap ends the confirmed outage, even without a new online event.
-        for (const event of events) {
+        for (const event of observerGaps) {
           if (event.type === 'observer_gap') {
             const gapStart = Date.parse(event.from);
             if (gapStart >= offlineStartMs && gapStart < offlineEndMs) offlineEndMs = gapStart;
@@ -235,8 +239,7 @@ export function calculateAvailabilitySummary(
     const latestEventAtMs = Date.parse(latestEvent.at);
 
     // Current state is unknown if observer continuity broke after the latest node event
-    const hasGapAfter = events.some((ev) => {
-      if (ev.type !== 'observer_gap') return false;
+    const hasGapAfter = observerGaps.some((ev) => {
       const gapFromMs = Date.parse(ev.from);
       const gapToMs = Date.parse(ev.to);
       return (gapFromMs > latestEventAtMs || gapToMs > latestEventAtMs) && gapFromMs < windowEndMs;

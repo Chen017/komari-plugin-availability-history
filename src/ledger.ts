@@ -10,6 +10,7 @@ export class Ledger {
   private currentSessionId: string = '';
   private currentStartedAt: string = '';
   private lastHeartbeatAt: string = '';
+  private needsTailCheck = true;
 
   constructor(storagePath: string) {
     this.storagePath = storagePath;
@@ -98,12 +99,16 @@ export class Ledger {
     const line = JSON.stringify(event) + '\n';
     try {
       // A partial trailing line must not swallow the next recovery event.
-      if (fs.existsSync(this.eventsFile)) {
+      // This ledger is the sole writer. Repair a pre-existing partial line
+      // once; successful appends always end with a newline. Recheck on errors.
+      if (this.needsTailCheck && fs.existsSync(this.eventsFile)) {
         const content = fs.readFileSync(this.eventsFile, 'utf-8');
         if (content && !content.endsWith('\n')) fs.appendFileSync(this.eventsFile, '\n', 'utf-8');
       }
       fs.appendFileSync(this.eventsFile, line, 'utf-8');
+      this.needsTailCheck = false;
     } catch (err) {
+      this.needsTailCheck = true;
       console.error('[LEDGER] Failed to append event to ' + this.eventsFile, err);
     }
   }
@@ -215,6 +220,7 @@ export class Ledger {
       const data = finalEvents.map((ev) => JSON.stringify(ev)).join('\n') + (finalEvents.length > 0 ? '\n' : '');
       fs.writeFileSync(tmpFile, data, 'utf-8');
       fs.renameSync(tmpFile, this.eventsFile);
+      this.needsTailCheck = false;
     } catch (err) {
       console.error('[LEDGER] Compaction failed', err);
     }
