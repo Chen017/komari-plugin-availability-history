@@ -131,7 +131,7 @@ export function registerRoutes(
       const events = ledger.loadEvents();
       const healthData = {
         schemaVersion: 1,
-        pluginVersion: '0.1.4',
+        pluginVersion: '0.1.5',
         healthy: isStorageWritable,
         sessionId: ledger.getSessionId(),
         startedAt: ledger.getStartedAt(),
