@@ -63,7 +63,8 @@ export function registerRoutes(
   server: any,
   ledger: Ledger,
   tracker: ConnectionTracker,
-  isStorageWritable: boolean
+  isStorageWritable: boolean,
+  pluginVersion: string | null = null
 ): void {
   if (typeof server?.route !== 'function') {
     throw new Error('[API] server.route is unavailable');
@@ -131,7 +132,7 @@ export function registerRoutes(
       const events = ledger.loadEvents();
       const healthData = {
         schemaVersion: 1,
-        pluginVersion: '0.1.5',
+        pluginVersion,
         healthy: isStorageWritable,
         sessionId: ledger.getSessionId(),
         startedAt: ledger.getStartedAt(),

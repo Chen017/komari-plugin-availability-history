@@ -13,10 +13,11 @@ class MockLedger {
 }
 
 describe('ConnectionTracker tests', () => {
-  it('handles normal outage: online -> disconnect -> grace expires -> reconnect', async () => {
+  it('handles normal outage: online -> disconnect -> grace expires -> reconnect', ({ mock }) => {
+    mock.timers.enable({ apis: ['setTimeout'] });
     const ledger = new MockLedger();
     const tracker = new ConnectionTracker({
-      offlineGraceSeconds: 0.05, // 50ms for testing
+      offlineGraceSeconds: 180,
       ledger,
     });
 
@@ -34,8 +35,7 @@ describe('ConnectionTracker tests', () => {
     // Before grace expires, no offline event
     assert.strictEqual(ledger.events.length, 1);
 
-    // Wait for grace to expire
-    await new Promise((r) => setTimeout(r, 80));
+    mock.timers.tick(180_000);
 
     assert.strictEqual(ledger.events.length, 2);
     assert.strictEqual(ledger.events[1].state, 'offline');
@@ -51,10 +51,11 @@ describe('ConnectionTracker tests', () => {
     assert.strictEqual(ledger.events[2].at, t2.toISOString());
   });
 
-  it('suppresses short flaps under grace period', async () => {
+  it('suppresses short flaps under grace period', ({ mock }) => {
+    mock.timers.enable({ apis: ['setTimeout'] });
     const ledger = new MockLedger();
     const tracker = new ConnectionTracker({
-      offlineGraceSeconds: 0.1, // 100ms
+      offlineGraceSeconds: 180,
       ledger,
     });
 
@@ -64,22 +65,22 @@ describe('ConnectionTracker tests', () => {
     // Close
     tracker.handleConnectionClose('node-1', 1);
 
-    // Reconnect after 30ms (< 100ms grace)
-    await new Promise((r) => setTimeout(r, 30));
+    // Reconnect before the grace period expires.
+    mock.timers.tick(30_000);
     tracker.ensureConnectionKnown('node-1', 2);
 
-    // Wait past the original 100ms
-    await new Promise((r) => setTimeout(r, 100));
+    mock.timers.tick(180_000);
 
     // No offline event should ever be emitted
     assert.strictEqual(ledger.events.length, 1);
     assert.strictEqual(ledger.events[0].state, 'online');
   });
 
-  it('keeps node online if one of multiple connections closes', async () => {
+  it('keeps node online if one of multiple connections closes', ({ mock }) => {
+    mock.timers.enable({ apis: ['setTimeout'] });
     const ledger = new MockLedger();
     const tracker = new ConnectionTracker({
-      offlineGraceSeconds: 0.05,
+      offlineGraceSeconds: 180,
       ledger,
     });
 
@@ -90,10 +91,43 @@ describe('ConnectionTracker tests', () => {
 
     // Close connection 1
     tracker.handleConnectionClose('node-1', 1);
-    await new Promise((r) => setTimeout(r, 70));
+    mock.timers.tick(180_000);
 
     // Still online because connection 2 remains
     assert.strictEqual(ledger.events.length, 1);
+  });
+
+  it('preserves the original outage time when close events repeat', ({ mock }) => {
+    mock.timers.enable({ apis: ['setTimeout'] });
+    const ledger = new MockLedger();
+    const tracker = new ConnectionTracker({ offlineGraceSeconds: 180, ledger });
+    const disconnectedAt = new Date('2026-09-22T12:00:00.000Z');
+    const duplicateAt = new Date('2026-09-22T12:01:00.000Z');
+
+    tracker.ensureConnectionKnown('node-1', 1);
+    tracker.handleConnectionClose('node-1', 1, disconnectedAt);
+    mock.timers.tick(60_000);
+    tracker.handleConnectionClose('node-1', 1, duplicateAt);
+    tracker.handleConnectionClose('node-1', 999, duplicateAt);
+    mock.timers.tick(120_000);
+    assert.equal(ledger.events.at(-1).at, disconnectedAt.toISOString());
+
+    mock.timers.tick(60_000);
+    assert.deepEqual(ledger.events.map((event) => event.state), ['online', 'offline']);
+  });
+
+  it('leaves no orphan grace timer when the tracker is unloaded', ({ mock }) => {
+    mock.timers.enable({ apis: ['setTimeout'] });
+    const ledger = new MockLedger();
+    const tracker = new ConnectionTracker({ offlineGraceSeconds: 180, ledger });
+
+    tracker.ensureConnectionKnown('node-1', 1);
+    tracker.handleConnectionClose('node-1', 1);
+    tracker.handleConnectionClose('node-1', 1);
+    tracker.clearAllTimers();
+    mock.timers.tick(180_000);
+
+    assert.deepEqual(ledger.events.map((event) => event.state), ['online']);
   });
 
   it('deduplicates repeated wsMessage calls', () => {

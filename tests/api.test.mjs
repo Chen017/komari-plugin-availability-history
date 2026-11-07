@@ -49,7 +49,6 @@ describe('API routes tests', () => {
           {},
           ledger,
           tracker,
-          { offlineGraceSeconds: 60, retentionDays: 90, observerHeartbeatSeconds: 30 },
           true
         );
       }, /server\.route is unavailable/);
@@ -142,5 +141,34 @@ describe('API routes tests', () => {
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
+  });
+
+  it('reports the injected package version in the admin health response', async () => {
+    const routes = new Map();
+    const server = { route: (_method, route, handler) => routes.set(route, handler) };
+    const ledger = {
+      loadEvents: () => [],
+      getSessionId: () => 'test-session',
+      getStartedAt: () => '2026-10-28T00:00:00.000Z',
+      getLastHeartbeatAt: () => '2026-10-28T00:00:30.000Z',
+      storagePath: 'test-data',
+    };
+    const tracker = new ConnectionTracker({ offlineGraceSeconds: 180, ledger });
+    const version = '0.0.0-beta.test';
+    registerRoutes(server, ledger, tracker, true, version);
+
+    const headers = {};
+    const response = {
+      setHeader: (name, value) => { headers[name] = value; },
+      end: (body) => { response.data = JSON.parse(body); },
+    };
+    await routes.get('/api/plugin/availability-history/v1/health')(
+      { context: { principal: { type: 'user', roles: ['admin'] } } },
+      response
+    );
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(headers['Cache-Control'], 'no-store');
+    assert.equal(response.data.pluginVersion, version);
   });
 });

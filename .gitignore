@@ -1,4 +1,5 @@
 node_modules/
+/.package-*/
 script.js
 *.zip
 .DS_Store

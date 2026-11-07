@@ -71,6 +71,40 @@
 
 ---
 
+## 开发与维护
+
+从项目根目录使用 Node.js 24 和 npm。包校验使用 Linux/macOS 的 `unzip` 或 Windows 自带的 `tar`。依赖版本由 `package-lock.json` 固定。
+
+```sh
+npm ci
+npm run verify
+npm run build:beta
+```
+
+`npm run verify` 依次执行类型检查、Node 测试、构建和安装包验证。单独调试可用 `npm test`、`npm run typecheck` 或 `npm run build`。测试使用临时数据目录和 Komari 接口替身。最终验收可将 ZIP 安装到测试 Komari，分别检查 Agent 连断、宽限期、重启后的未知区间和管理员 `health` 接口。
+
+| 目录或文件 | 职责 |
+| --- | --- |
+| `src/index.ts`、`src/config.ts` | 加载与卸载、注册 Komari 接口、解析受管配置 |
+| `src/tracker.ts`、`src/ledger.ts` | 连接事件、宽限期、JSONL 账本与观测者检查点 |
+| `src/summary.ts`、`src/api.ts` | 可用性计算、对外查询和管理员诊断 |
+| `build.mjs`、`komari-plugin.json` | 生成 Komari 可导入的 ZIP，维护插件标识、配置和版本 |
+| `tests/` | 存储恢复、统计语义、连接状态和接口回归 |
+
+### CI 与发布
+
+GitHub Actions 在面向 `master` 的 PR、相关的 `master` 推送以及手动触发时执行验证。手动运行完成后可下载验证过的安装包。GitHub Release 沿用手动发布，先同步 `package.json`、`package-lock.json` 和 `komari-plugin.json` 中的正式版本，再用 `npm run verify` 生成待上传的 `availability-history.zip`。
+
+正式包保留 `komari-plugin.json`、`script.js` 和 `assets/icon.svg` 的相对路径。Beta 包名为 `availability-history-beta-<提交号>.zip`，只修改包内版本，便于识别测试安装。诊断接口使用该包的 manifest 版本。
+
+### 兼容约定与故障排查
+
+- `wsMessage` 在插件重载后识别已有连接。只关闭当前记录中的最后一个连接才启动离线宽限期，重复的关闭事件不会改写断开时间。对应 `tests/tracker.test.mjs` 和 `tests/lifecycle.test.mjs`。
+- `events.jsonl` 由插件单独写入，首次追加或追加失败后检查残缺尾行。压缩保留窗口前锚点和最后一个旧观测缺口。重启期间及缺口后首次观测之前保持未知，统计先累加时长再舍入到秒。对应 `tests/persistence.test.mjs`、`tests/performance.test.mjs`、`tests/recovery_regressions.test.mjs` 和 `tests/summary.test.mjs`。
+- 主题显示缺少数据时，先检查插件是否运行、Agent 是否在 `/api/clients/v2/rpc` 上有活动，以及查询传入的节点 UUID。管理员可检查 `health` 返回的存储位置、心跳、事件数和待确认离线数。插件写入失败时应检查 Komari 日志和存储目录权限。
+
+---
+
 ## Komari Emerald Ecosystem
 
 本插件是 **Komari Emerald Ecosystem** 的核心组件之一：

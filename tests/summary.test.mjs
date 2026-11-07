@@ -239,4 +239,33 @@ describe('Availability summary calculation tests', () => {
     assert.strictEqual(node.observableSeconds, 0);
     assert.strictEqual(node.uptimeRatio, null);
   });
+
+  it('rounds short observations and gaps after summing them', () => {
+    const windowStart = new Date('2026-09-22T00:00:00.000Z');
+    const at = (ms) => new Date(windowStart.getTime() + ms).toISOString();
+    const events = [
+      ...[0, 1100, 2300].map((ms, session) => ({
+        schemaVersion: 1,
+        type: 'node_state',
+        nodeUuid: 'node-1',
+        state: 'online',
+        at: at(ms),
+        sessionId: `s${session}`,
+      })),
+      ...[[500, 1100], [1700, 2300], [2400, 3000]].map(([from, to]) => ({
+        schemaVersion: 1,
+        type: 'observer_gap',
+        from: at(from),
+        to: at(to),
+      })),
+    ];
+
+    const result = calculateAvailabilitySummary(events, ['node-1'], windowStart, new Date(at(3000)));
+    assert.deepEqual(result.observerCoverage, { observableSeconds: 1, unobservedSeconds: 2 });
+    assert.equal(result.nodes[0].onlineSeconds, 1);
+    assert.equal(result.nodes[0].offlineSeconds, 0);
+    assert.equal(result.nodes[0].observableSeconds, 1);
+    assert.equal(result.nodes[0].unobservedSeconds, 2);
+    assert.equal(result.nodes[0].coverageRatio, 0.3333);
+  });
 });

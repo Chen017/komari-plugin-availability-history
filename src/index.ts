@@ -5,6 +5,7 @@ import { ConnectionTracker } from './tracker.ts';
 import { registerRoutes } from './api.ts';
 
 declare const __storageDir__: string | undefined;
+declare const __PLUGIN_VERSION__: string | undefined;
 
 let ledgerInstance: Ledger | null = null;
 let trackerInstance: ConnectionTracker | null = null;
@@ -102,7 +103,8 @@ export async function load(): Promise<void> {
   console.log('[AVAILABILITY-HISTORY] Registered WebSocket hooks on /api/clients/v2/rpc');
 
   // Register HTTP routes
-  registerRoutes(server, ledger, tracker, isWritable);
+  const pluginVersion = typeof __PLUGIN_VERSION__ === 'string' ? __PLUGIN_VERSION__ : null;
+  registerRoutes(server, ledger, tracker, isWritable, pluginVersion);
 
   console.log('[AVAILABILITY-HISTORY] Storage ready at ' + storagePath);
 

@@ -70,9 +70,8 @@ export class ConnectionTracker {
     if (!clientUuid || connId === undefined || connId === null) return;
 
     const connSet = this.connections.get(clientUuid);
-    if (!connSet) return;
-
-    connSet.delete(connId);
+    // Only a tracked connection can start the last-close grace period.
+    if (!connSet?.delete(connId)) return;
 
     // If other connections remain, do nothing
     if (connSet.size > 0) {

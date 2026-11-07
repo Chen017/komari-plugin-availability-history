@@ -76,10 +76,8 @@ export function calculateAvailabilitySummary(
   }
 
   const mergedGaps = mergeIntervals(rawGaps);
-  let totalUnobservedSeconds = 0;
-  for (const gap of mergedGaps) {
-    totalUnobservedSeconds += Math.round((gap.endMs - gap.startMs) / 1000);
-  }
+  const totalUnobservedMs = mergedGaps.reduce((total, gap) => total + gap.endMs - gap.startMs, 0);
+  const totalUnobservedSeconds = Math.round(totalUnobservedMs / 1000);
   const globalObservableSeconds = Math.max(0, windowDurationSeconds - totalUnobservedSeconds);
 
   // 2. Node summaries
@@ -143,14 +141,13 @@ export function calculateAvailabilitySummary(
 
     const sortedTimes = Array.from(timestamps).sort((a, b) => a - b);
 
-    let onlineSeconds = 0;
-    let offlineSeconds = 0;
+    let onlineMs = 0;
+    let offlineMs = 0;
 
     for (let i = 0; i < sortedTimes.length - 1; i++) {
       const segStart = sortedTimes[i]!;
       const segEnd = sortedTimes[i + 1]!;
-      const segDuration = Math.round((segEnd - segStart) / 1000);
-      if (segDuration <= 0) continue;
+      const segDuration = segEnd - segStart;
 
       const segMid = segStart + (segEnd - segStart) / 2;
 
@@ -194,9 +191,9 @@ export function calculateAvailabilitySummary(
       }
 
       if (lastNodeEvent.state === 'online') {
-        onlineSeconds += segDuration;
+        onlineMs += segDuration;
       } else if (lastNodeEvent.state === 'offline') {
-        offlineSeconds += segDuration;
+        offlineMs += segDuration;
       }
     }
 
@@ -229,7 +226,10 @@ export function calculateAvailabilitySummary(
       }
     }
 
-    const observableSeconds = onlineSeconds + offlineSeconds;
+    // Quantize once, preserving the integer partition of the query window.
+    const observableSeconds = Math.round((onlineMs + offlineMs) / 1000);
+    const onlineSeconds = Math.round(onlineMs / 1000);
+    const offlineSeconds = observableSeconds - onlineSeconds;
     const unobservedSeconds = Math.max(0, windowDurationSeconds - observableSeconds);
     const coverageRatio = Number((observableSeconds / windowDurationSeconds).toFixed(4));
     const uptimeRatio =
