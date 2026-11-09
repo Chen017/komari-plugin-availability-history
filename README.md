@@ -131,6 +131,7 @@ GitHub Actions 在面向 `master` 的 PR、相关的 `master` 推送以及手动
 - [Komari Emerald Suite](https://github.com/Chen017/komari-emerald-suite)：生态聚合展示主页
 - [Komari Emerald Insights](https://github.com/Chen017/komari-theme-emerald-insights)：现代化前端监控主题
 - [Komari Plugin: IPQA Alert Report](https://github.com/Chen017/komari-plugin-ipqa-alert-report)：IP 质量归档同步与告警报告插件
+- [Komari Plugin: CPU Steal Monitor](https://github.com/Chen017/komari-plugin-cpu-steal-monitor)：可独立采集 Linux CPU Steal 并提供历史/汇总 API；可选搭配 Emerald Insights 在 CPU/负载图中叠加 Steal%
 
 ---
 
