@@ -110,22 +110,20 @@ GitHub Actions 在面向 `master` 的 PR、相关的 `master` 推送以及手动
 本插件是 **Komari Emerald Ecosystem** 的核心组件之一：
 
 ```text
-                         Komari
-                            │
-               ┌────────────┴────────────┐
-               │                         │
-               ▼                         ▼
-   Availability History          IPQA Alert Report
-   WebSocket event ledger        Archive / API / Alerts
-   (★ 本项目)                            │
-                                         ▼
-                               IP-Quality-Archive
-                               on monitored VPS
-               │                         │
-               └────────────┬────────────┘
-                            ▼
-                Komari Emerald Insights
-                    Resource Insights
+                           Komari
+                             │
+             ┌───────────────┼───────────────┐
+             │               │               │
+             ▼               ▼               ▼
+ Availability History  CPU Steal Monitor  IPQA Alert Report
+ WebSocket events      /proc/stat + API   Archive / Alerts
+             │               │               ▲
+             │               │               │ archive sync
+             │               │         IP-Quality-Archive
+             │               │           on monitored VPS
+             └───────────────┼───────────────┘
+                             ▼
+                 Emerald Insights (可选)
 ```
 
 - [Komari Emerald Suite](https://github.com/Chen017/komari-emerald-suite)：生态聚合展示主页
