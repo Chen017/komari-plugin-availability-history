@@ -93,7 +93,9 @@ npm run build:beta
 
 ### CI 与发布
 
-GitHub Actions 在面向 `master` 的 PR、相关的 `master` 推送以及手动触发时执行验证。手动运行完成后可下载验证过的安装包。GitHub Release 沿用手动发布，先同步 `package.json`、`package-lock.json` 和 `komari-plugin.json` 中的正式版本，再用 `npm run verify` 生成待上传的 `availability-history.zip`。
+GitHub Actions 在面向 `master` 的 PR、工程改动推送和手动触发时运行验证。手动运行完成后可下载验证过的安装包。正式发布前，用 `npm version <版本> --no-git-tag-version` 更新 npm 版本与锁文件，并同步 `komari-plugin.json`。推送 `master` 后，工作流检查 `v<版本>` 是否已有完整 ZIP。需要发布时，工作流校验标签指向该提交并复用同次验证生成的 `availability-history.zip`。
+
+发布失败时先检查 Actions 日志。标签若已指向该提交，可重跑原工作流。若标签指向别的提交，核对版本是否被复用。PR 验证使用只读权限，仓库写权限由发布任务单独取得。
 
 正式包保留 `komari-plugin.json`、`script.js` 和 `assets/icon.svg` 的相对路径。Beta 包名为 `availability-history-beta-<提交号>.zip`，只修改包内版本，便于识别测试安装。诊断接口使用该包的 manifest 版本。
 
